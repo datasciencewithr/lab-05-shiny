@@ -1,0 +1,83 @@
+---
+title: "computeTimes"
+output: html_document
+date: "2022-07-31"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages and data
+
+```{r load-packages, message=FALSE}
+library(tidyverse) 
+library(janitor)
+```
+
+## Computation times to run neural networks of different sizes
+
+Neural network inference computation is the act of runing a neural network on an input to create an output.
+In our case, the input to the network is an image, and the output is a list of detected objects and where they were found in the image.
+
+We collected data for running neural network inference computations over a variety of variables in order to determine how the variables affected the speed.
+
+Variables of interest: Model: What model and size of model was used gpu: Was computation done on gpu or not (if not then it is on a CPU) network: Were images sent over a network, and if so was it wired or wireless images: number of images in the test time: in seconds to run all the images fps: Frames per second, calculated by dividing images / time.
+
+First, we read in the data and look at it.
+
+```{r cars}
+# remove rows where model is NA.
+inference <- read_csv(file = "data/neuralnetworkspeed.csv", skip_empty_rows = TRUE) %>%
+  filter(!is.na(model)) %>%
+  clean_names()
+
+
+
+```
+
+## Plot fps (speed) vs. model
+
+We are interested to understand how different variables affect speed.
+Let's look at fps vs. model and gpu
+
+```{r pressure, echo=FALSE}
+
+inference %>%
+  ggplot(aes(x = model, y = fps, color = gpu)) +
+  geom_boxplot() 
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Let's also look at fps vs. model and network settings
+
+```{r pressure, echo=FALSE}
+
+inference %>%
+  ggplot(aes(x = model, y = fps, color = network)) +
+  geom_boxplot() 
+```
+
+### gpu is faster
+
+It is clear that running the inference on gpu is faster than running on CPU.
+But there is still a large variation in some data.
+Let's dig into just the gpu data.
+
+```{r justgpu}
+
+theGPUfilter <- "GPU"
+theNetworkFilter <- c("none","wireless","wired")
+inference %>%
+  filter(gpu %in% theGPUfilter,
+         network %in% theNetworkFilter) %>%
+  ggplot(aes(x = model, y = fps, fill = network)) +
+  geom_col(position="dodge") +
+  labs(title = theGPUfilter) +
+      ylim(0,45)
+
+
+```
